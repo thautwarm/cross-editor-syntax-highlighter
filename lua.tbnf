@@ -1,0 +1,189 @@
+extern var isKeyword : token -> int
+extern var isLiteral : token -> int
+extern var isString : token -> int
+extern var isVariable : token -> int
+extern var isAttr : token -> int
+extern var isNumber : token -> int
+extern var isBinaryOperator : token -> int
+extern var isUnaryOperator : token -> int
+extern var isFuncCall : token -> int
+extern var isFuncDecl : token -> int
+extern var isControl : token -> int
+
+
+nempty_list(elt)
+    : elt { 0 }
+    | nempty_list(elt) elt { 0 }
+
+nempty_seplist(sep, elt)
+    : elt { 0 }
+    | nempty_seplist(sep, elt) sep elt { 0 }
+
+allow_empty(sequence)
+    :          { 0 }
+    | sequence { 0 }
+
+start : block { 0 }
+
+list(elt) : allow_empty(nempty_list(elt)) { 0 }
+
+seplist(sep, elt) : allow_empty(nempty_seplist(sep, elt)) { 0 }
+
+opt(value) : value { 0 }
+           |       { 0 }
+
+block : list(stat) opt(retstat) { 0 }
+
+retcolon : ";" { isControl($1) }
+         |     { 0 }
+
+retstat : "return" seplist(",", exp) retcolon { isKeyword($1) }
+
+name: <NAME> { isVariable($1) }
+
+stat : ";" { 0 }
+     | nempty_seplist(",", exp) "=" nempty_seplist(",", exp) { 0 }
+     | exp { 0 }
+     | "::" <NAME> "::" { isControl($1);isControl($3) }
+     | "break"
+           { isKeyword($1) }
+     | "goto" <NAME>
+           { isKeyword($1); isControl($2) }
+     | "do" block "end"
+            { isKeyword($1);isKeyword($3) }
+     | "while" exp "do" block "end"
+            { isKeyword($1); isKeyword($3);isKeyword($5) }
+     | "repeat" block "until" exp
+           { isKeyword($1); isKeyword($3) }
+     | "if" exp "then" block list(elseif) opt(else) "end"
+           { isKeyword($1); isKeyword($3);isKeyword($7) }
+     | "for" <NAME> "=" range "do" block "end"
+           { isKeyword($1); isKeyword($3);isKeyword($5);isKeyword($7) }
+     | "for" nempty_seplist(",", name) "in" nempty_seplist(",", exp) "do" block "end"
+           { isKeyword($1); isKeyword($3);isKeyword($5);isKeyword($7) }
+     | "local" "function" funcname "(" opt(parlist) ")" block "end"
+           { isKeyword($1);isKeyword($2);isKeyword($4);isKeyword($6);isKeyword($8) }
+     | "local" nempty_seplist(",", <NAME>) opt_assign_rhs
+           { isKeyword($1) }
+
+opt_assign_rhs :
+             "=" nempty_seplist(",", exp) { 0 }
+           | { 0 }
+
+range : exp "," exp range_tail { 0 }
+range_tail : "," exp { 0 }
+           |         { 0 }
+
+elseif : "elseif" exp "then" block { isKeyword($1);isKeyword($3) }
+else : "else" block { isKeyword($1) }
+
+
+exp : binexp { 0 }
+binexp : binseq { 0 }
+
+binseq : binseq binop binoperand { 0 }
+       | binoperand              { 0 }
+
+binoperand : unaryexp { 0 }
+
+unaryexp : "#" exponent { isUnaryOperator($1) }
+         | "-" exponent { isUnaryOperator($1) }
+         | "~" exponent { isUnaryOperator($1) }
+         | "not" exponent { isUnaryOperator($1) }
+         | exponent { 0 }
+
+exponent : prefixexp "^" exponent { isBinaryOperator($2) }
+         | prefixexp              { 0 }
+
+prefixexp :   <NAME>                  { isVariable($1) }
+          | "(" exp ")"               { 0 }
+          | prefixexp args            { 0 }
+          | prefixexp ":" <NAME> args { isAttr($3) }
+          | prefixexp "[" exp "]"     { 0 }
+          | prefixexp "." <NAME>      { isAttr($3) }
+          | atom                      { 0 }
+
+atom   : "nil"     { isLiteral($1) }
+       | "false"   { isLiteral($1) }
+       | "true"    { isLiteral($1) }
+       | <NUMERAL> { isNumber($1) }
+       | <STR_LIT> { isString($1) }
+       | <NESTED_STR>     { isString($1) }
+       | "..."            { isControl($1) }
+       | functiondef      { 0 }
+       | tableconstructor { 0 }
+
+
+args : "(" seplist(",", exp) ")" { isFuncCall($1); isFuncCall($3) }
+     | tableconstructor          { 0 }
+     | <STR_LIT>                 { isString($1) }
+
+functiondef : "function" opt(funcname) "(" opt(parlist) ")" block "end"
+              { isKeyword($1); isKeyword($7);isFuncDecl($3); isFuncDecl($5) }
+
+varargs : "," "..." { isControl($2) }
+        |           { 0 }
+
+parlist : "..." { 0 }
+        | nempty_seplist(",", name) varargs { 0 }
+
+tableconstructor : "{" nempty_seplist(fieldsep, field) opt(fieldsep) "}" { 0 }
+                 | "{" "}" { 0 }
+
+funcname : funcname "." <NAME>  { isAttr($3) }
+         | funcname ":" <NAME>  { isAttr($3) }
+         | <NAME> { isVariable($1) }
+
+field : "[" exp "]" "=" exp { 0 }
+        | <NAME> "=" exp    { isAttr($1) }
+        | exp               { 0 }
+
+fieldsep : "," { 0 } 
+         | ";" { 0 }
+
+binop : "or"  { isBinaryOperator($1) }
+      | "and" { isBinaryOperator($1) }
+      | "<"  { isBinaryOperator($1) }
+      | ">"  { isBinaryOperator($1) }
+      | "<=" { isBinaryOperator($1) }
+      | ">=" { isBinaryOperator($1) }
+      | "~="  { isBinaryOperator($1) }
+      | "=="  { isBinaryOperator($1) }
+      | "|"   { isBinaryOperator($1) }
+      | "~"   { isBinaryOperator($1) }
+      | "&"   { isBinaryOperator($1) }
+      | "<<"  { isBinaryOperator($1) }
+      | ">>"  { isBinaryOperator($1) }
+      | ".."  { isBinaryOperator($1) }
+      | "+"   { isBinaryOperator($1) }
+      | "-"   { isBinaryOperator($1) }
+      | "*"  { isBinaryOperator($1) }
+      | "/"  { isBinaryOperator($1) }
+      | "//" { isBinaryOperator($1) }
+      | "%"  { isBinaryOperator($1) }
+      
+
+ignore SPACE, LINE_COMMENT
+
+LINE_COMMENT = "-" "-" (!"\n")* "\n";
+SPACE = " " | "\t" | "\r" | "\n";
+DIGIT = [0-9];
+HEXCHAR = [0-9] | [a-z] | [A-Z];
+UCHAR = [a-z] | [A-Z] | "_" ;
+NAME =  UCHAR (UCHAR|DIGIT)*;
+INT = DIGIT+;
+INTEGRAL = INT ("." INT)? (("E" | "e")  INT)?;
+HEX = "0x" HEXCHAR+;
+NUMERAL = HEX | INTEGRAL;
+STR_LIT = "\"" ("\\" _ | !"\"")* "\"";
+
+// [[.*]]
+NESTED_STR1 = "[" ("]" !"]"| !"]")* "]";
+// [=[.*]=]
+NESTED_STR2 =
+      "="
+      ( "[" (!"]" | "]" (!"=" | "=" !"]"))* "]"
+      | ("=" !"]"| !"=")*
+      )
+      "=";
+NESTED_STR = "[" (NESTED_STR1|NESTED_STR2)  "]";
