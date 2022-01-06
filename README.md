@@ -7,6 +7,9 @@ Do you like "one grammar, syntax highlighters everywhere?"
 
 喜欢我一个文法，到处高亮吗？
 
+PS: **NOTE that parentheses in function arguments and parameters have different colors.**
+
+PPS: **The amount of code required to implement such a cross-editor SH(~100 lines), is many orders of magnitude smaller than for the tmLanguage system(~10000 lines and unreadable)**.
 
 ### build grammar for VScode
 
