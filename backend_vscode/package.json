@@ -1,0 +1,54 @@
+{
+	"name": "vscode-tbnf-lua",
+	"displayName": "vscode-tbnf-lua",
+	"description": "example",
+	"version": "0.0.1",
+	"publisher": "GReSummer",
+	"private": true,
+	"license": "MIT",
+	"icon": "static/icon.png",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/thautwarm/cross-editor-syntax-highlighter/backend-vscode"
+	},
+	"engines": {
+		"vscode": "^1.42.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:rua"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"languages": [
+			{
+				"id": "rua",
+				"extensions": [
+					".rua"
+				],
+				"configuration": "./language-configuration.json"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"antlr4ts": "antlr4ts -visitor src/lua_sh.g4",
+		"lint": "eslint . --ext .ts,.tsx",
+		"watch": "tsc -watch -p ./"
+	},
+	"devDependencies": {
+		"@types/node": "^12.12.0",
+		"@types/vscode": "^1.42.0",
+		"@typescript-eslint/eslint-plugin": "^4.16.0",
+		"@typescript-eslint/parser": "^4.16.0",
+		"antlr4ts-cli": "^0.5.0-alpha.4",
+		"eslint": "^7.21.0",
+		"typescript": "^4.4.3"
+	},
+	"dependencies": {
+		"antlr4ts": "^0.5.0-alpha.4"
+	}
+}
