@@ -18,4 +18,4 @@ build: `tbnf  .\cross-editor-highlighter\lua.tbnf .\cross-editor-highlighter\bac
 
 ### build grammar for pygments
 
-build: ` python .\runcli.py  .\cross-editor-highlighter\lua.tbnf .\cross-editor-highlighter\backend_pygments\ "lua_sh" --backend python-lark`
+build: ` tbnf .\cross-editor-highlighter\lua.tbnf .\cross-editor-highlighter\backend_pygments\ "lua_sh" --backend python-lark`
