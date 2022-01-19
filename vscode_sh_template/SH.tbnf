@@ -1,0 +1,56 @@
+extern var SH : (token, str) -> int
+
+LINE_END = "\n" | "\r";
+DIGIT = [0-9];
+INT = DIGIT+ ;
+VERSION = "v" INT ("." INT ("." INT)?)?;
+FLT = INT ("." INT)? ;
+EXP = "-"? FLT (("e" | "E") INT)?;
+STR = "\"" ( "\\" _ | ! "\"" )* "\"" ;
+SPACE = ("\t" | "\n" | "\r" | " ")+;
+LINE_COMMENT = "-" "-" (!("\n" | "\r"))*;
+ID_CHAR = ([a-z] | [A-Z] | "_" | [\u4e00-\u9fa5]);
+ID = ID_CHAR (ID_CHAR | [0-9] | "-")*;
+
+ignore  SPACE
+
+start : "format" version component { SH($1, "namespace") }
+list(a) : a { 0 }
+        | list(a) a { 0 }
+
+
+
+op       : "==" { SH($1, "operator") }
+         | "!=" { SH($1, "operator") }
+         | ">"  { SH($1, "operator") }
+         | "<"  { SH($1, "operator") }
+         | ">=" { SH($1, "operator") }
+         | "<=" { SH($1, "operator") }
+         | "~"  { SH($1, "operator") }
+         | "^"  { SH($1, "operator") }
+
+version : <VERSION> { SH($1, "regexp") }
+specifier : op version { 0 }
+specifier_set : specifier { 0 }
+              | specifier_set "&&" specifier { SH($2, "enum") }
+
+comment : <LINE_COMMENT> { SH($1, "comment") }
+
+id : "format" { SH($1, "variable") }
+   | <ID>     { SH($1, "variable") }
+
+comp      : <EXP>      { SH($1, "number") }
+          | <STR>      { SH($1, "string") }
+          | "true"     { SH($1, "struct") }
+          | "false"    { SH($1, "struct") }
+          | "null"     { SH($1, "struct") }
+          | version    { 0 }
+          | specifier_set { 0 }
+          | id comp    { 0 }
+          | "{" list(component) "}"
+                            { SH($1, "class"); SH($3, "class") }
+          | "{" "}"         { SH($1, "class"); SH($2, "class") }
+
+
+component  : comp               { 0 }
+           | list(comment) comp { 0 }
