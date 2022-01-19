@@ -3,9 +3,7 @@
 ![lua](_.PNG)
 
 
-Do you like "one grammar, syntax highlighters everywhere?"
-
-喜欢我一个文法，到处高亮吗？
+One grammar, syntax highlighters everywhere.
 
 PS: **NOTE that parentheses in function arguments and parameters have different colors.**
 
